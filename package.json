@@ -1,0 +1,25 @@
+{
+  "name": "clipforge",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.19 <21"
+  },
+  "scripts": {
+    "build": "npm run build --workspace @clipforge/shared && npm run build --workspace @clipforge/api && npm run build --workspace @clipforge/worker && npm run build --workspace @clipforge/web",
+    "typecheck": "npm run build --workspace @clipforge/shared && npm run typecheck --workspace @clipforge/shared && npm run typecheck --workspace @clipforge/api && npm run typecheck --workspace @clipforge/worker && npm run typecheck --workspace @clipforge/web",
+    "test": "vitest run",
+    "test:integration": "RUN_MEDIA_INTEGRATION=true RUN_QUEUE_INTEGRATION=true vitest run",
+    "dev": "npm run build --workspace @clipforge/shared && concurrently -k -n api,web -c blue,magenta \"npm run dev --workspace @clipforge/api\" \"npm run dev --workspace @clipforge/web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.12",
+    "vite": "^8.3.6"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "@clipforge/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage.d.ts",
+      "import": "./dist/storage.js"
+    },
+    "./media-probe": {
+      "types": "./dist/media-probe.d.ts",
+      "import": "./dist/media-probe.js"
+    },
+    "./chunk-upload": {
+      "types": "./dist/chunk-upload.d.ts",
+      "import": "./dist/chunk-upload.js"
+    },
+    "./transcription-estimate": {
+      "types": "./dist/transcription-estimate.d.ts",
+      "import": "./dist/transcription-estimate.js"
+    },
+    "./url-import": {
+      "types": "./dist/url-import.d.ts",
+      "import": "./dist/url-import.js"
+    },
+    "./yt-dlp": {
+      "types": "./dist/yt-dlp.d.ts",
+      "import": "./dist/yt-dlp.js"
+    },
+    "./clip-scoring": {
+      "types": "./dist/clip-scoring.d.ts",
+      "import": "./dist/clip-scoring.js"
+    },
+    "./clip-standalone": {
+      "types": "./dist/clip-standalone.d.ts",
+      "import": "./dist/clip-standalone.js"
+    },
+    "./clip-funnel": {
+      "types": "./dist/clip-funnel.d.ts",
+      "import": "./dist/clip-funnel.js"
+    },
+    "./clip-topics": {
+      "types": "./dist/clip-topics.d.ts",
+      "import": "./dist/clip-topics.js"
+    },
+    "./clip-trim": {
+      "types": "./dist/clip-trim.d.ts",
+      "import": "./dist/clip-trim.js"
+    },
+    "./caption-config": {
+      "types": "./dist/caption-config.d.ts",
+      "import": "./dist/caption-config.js"
+    },
+    "./clip-metadata": {
+      "types": "./dist/clip-metadata.d.ts",
+      "import": "./dist/clip-metadata.js"
+    },
+    "./platform-limits": {
+      "types": "./dist/platform-limits.d.ts",
+      "import": "./dist/platform-limits.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}

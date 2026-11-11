@@ -1,0 +1,118 @@
+# Upload requests reach Express directly; no reverse proxy applies a body limit.
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "192mb", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 256m
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+    restart: unless-stopped
+    command: ["npm", "run", "start", "--workspace", "@clipforge/api"]
+    env_file: .env
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/clipforge
+      REDIS_URL: redis://redis:6379
+      STORAGE_ROOT: /app/data
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 512m
+
+  whisper-model-init:
+    image: alpine:3.20
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /models /models/fastembed && chown -R ${LOCAL_UID:-1000}:${LOCAL_GID:-1000} /models /models/fastembed && chmod -R u+rwX /models /models/fastembed && test -w /models/fastembed && echo 'Model cache ready and writable: /models /models/fastembed'"]
+    volumes:
+      - whisper-models:/models
+      - fastembed-models:/models/fastembed
+    restart: "no"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    command: ["npm", "run", "start", "--workspace", "@clipforge/worker"]
+    env_file: .env
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      REDIS_URL: redis://redis:6379
+      WHISPER_VENV: /opt/whisper-venv
+      HF_HOME: /models
+      WHISPER_MODEL_DIR: /models
+      FASTEMBED_CACHE_DIR: /models/fastembed
+    volumes:
+      - ./data:/app/data
+      - whisper-models:/models
+      - fastembed-models:/models/fastembed
+    depends_on:
+      redis:
+        condition: service_healthy
+      whisper-model-init:
+        condition: service_completed_successfully
+    mem_limit: 2g
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:4000/api/v1
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 256m
+
+volumes:
+  mongo-data:
+    driver: local
+  redis-data:
+    driver: local
+  whisper-models:
+    driver: local
+  fastembed-models:
+    driver: local

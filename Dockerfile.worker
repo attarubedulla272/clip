@@ -1,0 +1,31 @@
+FROM node:20-bookworm-slim
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ffmpeg python3 python3-venv espeak-ng fontconfig fonts-noto-core fonts-noto-extra \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN fc-cache -f
+
+WORKDIR /app
+RUN mkdir -p /models/fastembed && chown 1000:1000 /models/fastembed
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/worker/package.json apps/worker/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+RUN npm ci
+COPY . .
+RUN npm run build
+
+RUN python3 -m venv /opt/whisper-venv \
+  && /opt/whisper-venv/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/whisper-venv/bin/pip install --no-cache-dir -r apps/worker/python/requirements.txt
+
+RUN /opt/whisper-venv/bin/pip install --no-cache-dir yt-dlp
+
+ENV NODE_ENV=production
+ENV WHISPER_VENV=/opt/whisper-venv
+ENV WHISPER_MODEL_DIR=/models
+ENV HF_HOME=/models
+ENV YTDLP_PATH=/opt/whisper-venv/bin/yt-dlp
+CMD ["npm", "run", "start", "--workspace", "@clipforge/worker"]
